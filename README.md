@@ -90,7 +90,7 @@ Feel free to fork this repo and submit pull requests for any improvements.
 
 ## Author
 
-Built by **Namith** as a full-stack web development project.
+Built by **Namith & Simran** as a full-stack web development project.
 
 ---
 
