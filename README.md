@@ -1,130 +1,97 @@
-# Transit-Hub 🚌✈️
+# Transit Hub
 
-A comprehensive transit booking system built with .NET 8 and Angular 20, featuring JWT authentication and modern full-stack architecture.
+A train booking system where users can search trains, book tickets, and manage their bookings. Admins can manage stations, trains, and view booking reports.
 
-## 🚀 Quick Start
+## What it does
 
-### Prerequisites
+- **Users** can register, search trains, book tickets, join waitlists, and manage their bookings
+- **Admins** can add/edit stations and trains, view all bookings and user data
+- **Real-time** seat availability and waitlist management
+- **Email verification** for new accounts
+
+## Tech Stack
+
+- **Backend**: .NET 8 Web API with SQL Server
+- **Frontend**: Angular 20 with Material Design
+- **Database**: SQL Server with Entity Framework
+
+## Setup
+
+### Requirements
 - .NET 8 SDK
-- Node.js (18+)
-- SQL Server (LocalDB or full version)
-- Angular CLI: `npm install -g @angular/cli`
+- Node.js 18+
+- SQL Server
 
-### Clone and Setup
+### Installation
+
+1. **Clone the repo**
 ```bash
-# Clone the repository
-git clone https://github.com/YOUR_USERNAME/Transit-Hub.git
-cd Transit-Hub
+git clone https://github.com/Nami-101/TRANSIT_HUB_FINAL.git
+cd TRANSIT_HUB_FINAL
+```
 
-# Backend setup
+2. **Setup Database**
+- Run `PostMigrationSetup.sql` in SQL Server Management Studio
+
+3. **Backend**
+```bash
 cd backend
 dotnet restore
-dotnet ef database update
+# Update connection string in appsettings.json
 dotnet run
+```
 
-# Frontend setup (new terminal)
+4. **Frontend**
+```bash
 cd frontend/transit-hub-frontend
 npm install
 ng serve
 ```
 
-### Default URLs
-- **Backend API**: http://localhost:5000
-- **Frontend**: http://localhost:4200
-- **Swagger**: http://localhost:5000/swagger
+Visit http://localhost:4200 to use the app.
 
-## 🔐 Authentication
+## Features
 
-The system includes complete JWT authentication:
-- **Register**: Create new user accounts
-- **Login**: JWT token-based authentication  
-- **Role-based access**: Admin, User, Moderator roles
-- **Auto-refresh**: Seamless token renewal
+### For Users
+- Register and login with email verification
+- Search trains by date and stations
+- Book tickets with seat selection
+- Join waitlist when trains are full
+- View booking history
+- Cancel bookings
 
-### Test Accounts
-After running the backend, you can register new accounts or use seeded data.
+### For Admins
+- Manage railway stations
+- Add and configure trains
+- View all bookings and users
+- Monitor system activity
 
-## 🏗️ Architecture
-
-### Backend (.NET 8)
-- **Repository Pattern** with Unit of Work
-- **JWT Authentication** with role-based authorization
-- **Entity Framework Core** with SQL Server
-- **Swagger Documentation** for API testing
-- **Comprehensive DTOs** with validation
-
-### Frontend (Angular 20)
-- **Standalone Components** with reactive forms
-- **Material UI** design system
-- **Tailwind CSS** for styling
-- **HTTP Interceptors** for JWT handling
-- **Route Guards** for authentication
-- **Feature-based** modular structure
-
-## 📁 Project Structure
+## Project Structure
 
 ```
-Transit-Hub/
-├── backend/
-│   ├── Controllers/         # API endpoints
-│   ├── Services/           # Business logic
-│   ├── Models/DTOs/        # Data transfer objects
-│   ├── Data/              # Database context
-│   └── Program.cs         # App configuration
-├── frontend/transit-hub-frontend/
-│   ├── src/app/
-│   │   ├── features/      # Feature modules
-│   │   ├── services/      # Angular services
-│   │   ├── guards/        # Route guards
-│   │   └── interceptors/  # HTTP interceptors
-│   └── src/styles.css     # Global styles
-└── README.md
+├── backend/           # .NET 8 API
+├── frontend/          # Angular 20 app
+├── docs/             # Documentation
+└── PostMigrationSetup.sql  # Database setup
 ```
 
-## 🛠️ Development
+## Screenshots
 
-### Running Both Services
-```bash
-# Terminal 1 - Backend
-cd backend
-dotnet run
+The app includes:
+- Clean login/register pages
+- Train search with filters
+- Interactive seat selection
+- Booking management dashboard
+- Admin panel for system management
 
-# Terminal 2 - Frontend  
-cd frontend/transit-hub-frontend
-ng serve
-```
+## Contributing
 
-### Database
-The backend automatically:
-- Creates the database if it doesn't exist
-- Runs migrations
-- Seeds initial data and roles
-- Creates stored procedures
+Feel free to fork this repo and submit pull requests for any improvements.
 
-### API Testing
-Visit http://localhost:5000/swagger for interactive API documentation.
+## Author
 
-## 🚀 Features
-
-- ✅ **User Authentication** (Register, Login, JWT)
-- ✅ **Role Management** (Admin, User, Moderator)
-- ✅ **Responsive UI** (Mobile-friendly design)
-- ✅ **API Documentation** (Swagger/OpenAPI)
-- ✅ **Database Seeding** (Test data included)
-- 🔄 **Train/Flight Search** (In development)
-- 🔄 **Booking System** (In development)
-- 🔄 **Payment Integration** (Planned)
-
-## 🤝 Contributing
-
-1. Create a feature branch: `git checkout -b feature/your-feature`
-2. Make changes and commit: `git commit -m "Add your feature"`
-3. Push to branch: `git push origin feature/your-feature`
-4. Create Pull Request
-
-## 📞 Support
-
-For questions or issues, please create an issue in the repository.
+Built by **Namith** as a full-stack web development project.
 
 ---
-*Built with ❤️ using .NET 8 and Angular 20*
+
+*A modern train booking system built with .NET and Angular*
