@@ -1,5 +1,6 @@
 import { Component, OnInit } from '@angular/core';
 import { CommonModule } from '@angular/common';
+import { Router } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
 import { MatButtonModule } from '@angular/material/button';
 import { MatIconModule } from '@angular/material/icon';
@@ -52,7 +53,7 @@ import { Observable } from 'rxjs';
             <p>Start by searching for routes and making your first booking!</p>
           </mat-card-content>
           <mat-card-actions>
-            <button mat-raised-button color=\"primary\">
+            <button mat-raised-button color=\"primary\" (click)=\"navigateToSearch()\">
               <mat-icon>search</mat-icon>
               Find Routes
             </button>
@@ -179,7 +180,10 @@ import { Observable } from 'rxjs';
 export class DashboardComponent implements OnInit {
   currentUser$: Observable<UserInfo | null>;
 
-  constructor(private authService: AuthService) {
+  constructor(
+    private authService: AuthService,
+    private router: Router
+  ) {
     this.currentUser$ = this.authService.currentUser$;
   }
 
@@ -195,5 +199,9 @@ export class DashboardComponent implements OnInit {
         console.error('Failed to load user info:', error);
       }
     });
+  }
+
+  navigateToSearch(): void {
+    this.router.navigate(['/search']);
   }
 }

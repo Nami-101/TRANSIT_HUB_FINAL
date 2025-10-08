@@ -11,11 +11,16 @@ namespace TransitHub.Controllers
     public class BookingController : ControllerBase
     {
         private readonly IBookingService _bookingService;
+        private readonly ITrainBookingService _trainBookingService;
         private readonly ILogger<BookingController> _logger;
 
-        public BookingController(IBookingService bookingService, ILogger<BookingController> logger)
+        public BookingController(
+            IBookingService bookingService, 
+            ITrainBookingService trainBookingService,
+            ILogger<BookingController> logger)
         {
             _bookingService = bookingService;
+            _trainBookingService = trainBookingService;
             _logger = logger;
         }
 
@@ -143,6 +148,25 @@ namespace TransitHub.Controllers
         }
 
         /// <summary>
+        /// Get coach layout with seat availability
+        /// </summary>
+        [HttpGet("coach-layout/{scheduleId}/{trainClass}")]
+        [AllowAnonymous] // Allow anonymous access for seat viewing
+        public async Task<ActionResult> GetCoachLayout(int scheduleId, string trainClass)
+        {
+            try
+            {
+                var result = await _trainBookingService.GetCoachLayoutAsync(scheduleId, trainClass);
+                return Ok(result);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Error getting coach layout for schedule {ScheduleId}", scheduleId);
+                return StatusCode(500, new { Message = "Internal server error occurred" });
+            }
+        }
+
+        /// <summary>
         /// Cancel a booking
         /// </summary>
         [HttpPost("{bookingId}/cancel")]
@@ -157,23 +181,27 @@ namespace TransitHub.Controllers
                     return BadRequest(ModelState);
                 }
 
-                // Get current user ID from JWT token
-                var currentUserId = User?.FindFirst("sub")?.Value ?? User?.FindFirst("id")?.Value;
-                
-                // Ensure user can only cancel their own bookings
-                if (currentUserId != cancelRequest.UserId.ToString())
+                var result = await _trainBookingService.CancelBookingAsync(new TransitHub.Models.DTOs.CancelBookingRequest
                 {
-                    return Forbid("You can only cancel your own bookings");
-                }
-
-                var result = await _bookingService.CancelBookingAsync(bookingId, cancelRequest.UserId, cancelRequest.Reason);
+                    BookingId = bookingId,
+                    Reason = cancelRequest.Reason
+                });
                 
                 if (result.Success)
                 {
-                    return Ok(result);
+                    return Ok(new CancellationResponseDto
+                    {
+                        Success = result.Success,
+                        Message = result.Message,
+                        RefundAmount = result.RefundAmount
+                    });
                 }
                 
-                return BadRequest(result);
+                return BadRequest(new CancellationResponseDto
+                {
+                    Success = result.Success,
+                    Message = result.Message
+                });
             }
             catch (ArgumentException ex)
             {
@@ -190,7 +218,13 @@ namespace TransitHub.Controllers
     // Helper DTO for cancellation request
     public class CancelBookingRequestDto
     {
-        public int UserId { get; set; }
         public string? Reason { get; set; }
+    }
+    
+    public class CancellationResponseDto
+    {
+        public bool Success { get; set; }
+        public string Message { get; set; } = string.Empty;
+        public decimal? RefundAmount { get; set; }
     }
 }

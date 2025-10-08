@@ -9,9 +9,12 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatNativeDateModule } from '@angular/material/core';
+import { MatSnackBarModule } from '@angular/material/snack-bar';
 import { Router, RouterModule } from '@angular/router';
 import { AuthService } from '../../../services/auth.service';
 import { RegisterRequest, ApiResponse } from '../../../models/auth.dto';
+import { OtpSendingAnimationComponent } from '../../../components/otp-sending-animation.component';
+import { ToastService } from '../../../services/toast.service';
 
 @Component({
   selector: 'app-register',
@@ -27,12 +30,22 @@ import { RegisterRequest, ApiResponse } from '../../../models/auth.dto';
     MatProgressSpinnerModule,
     MatDatepickerModule,
     MatNativeDateModule,
-    RouterModule
+    MatSnackBarModule,
+    RouterModule,
+    OtpSendingAnimationComponent
   ],
   template: `
+    <app-otp-sending-animation 
+      *ngIf="showOtpAnimation" 
+      (animationComplete)="onOtpAnimationComplete()">
+    </app-otp-sending-animation>
+    
     <div class="min-h-screen flex items-center justify-center bg-gray-50 py-12 px-4 sm:px-6 lg:px-8">
       <div class="max-w-md w-full space-y-8">
         <div>
+          <div class="flex justify-center mb-6">
+            <img src="transithub-logo.png.jpeg" alt="Transit Hub" class="h-16 w-auto">
+          </div>
           <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
             Create your Transit-Hub account
           </h2>
@@ -209,6 +222,17 @@ import { RegisterRequest, ApiResponse } from '../../../models/auth.dto';
     .flex.space-x-4 .mat-mdc-form-field:last-child {
       margin-right: 0;
     }
+    
+    /* Hide duplicate password visibility icons */
+    .mat-mdc-form-field input[type="password"]::-ms-reveal,
+    .mat-mdc-form-field input[type="password"]::-webkit-credentials-auto-fill-button {
+      display: none !important;
+    }
+    
+    .mat-mdc-form-field input[type="text"]::-ms-reveal,
+    .mat-mdc-form-field input[type="text"]::-webkit-credentials-auto-fill-button {
+      display: none !important;
+    }
   `]
 })
 export class RegisterComponent {
@@ -218,11 +242,14 @@ export class RegisterComponent {
   isLoading = false;
   errorMessage = '';
   successMessage = '';
+  showOtpAnimation = false;
+  pendingEmail = '';
 
   constructor(
     private formBuilder: FormBuilder,
     private authService: AuthService,
-    private router: Router
+    private router: Router,
+    private toastService: ToastService
   ) {
     this.registerForm = this.formBuilder.group({
       firstName: ['', [Validators.required, Validators.maxLength(50)]],
@@ -277,10 +304,12 @@ export class RegisterComponent {
           this.isLoading = false;
           console.log('Registration response:', response);
           if (response.success) {
-            this.successMessage = 'Account created successfully! Redirecting to login...';
+            this.successMessage = 'Account created successfully! Sending verification code...';
+            this.pendingEmail = registerRequest.email;
+            // Show OTP animation
             setTimeout(() => {
-              this.router.navigate(['/auth/login']);
-            }, 2000);
+              this.showOtpAnimation = true;
+            }, 1000);
           } else {
             this.errorMessage = response.message || 'Registration failed. Please try again.';
             if (response.errors && response.errors.length > 0) {
@@ -291,16 +320,27 @@ export class RegisterComponent {
         error: (error: any) => {
           this.isLoading = false;
           console.error('Registration error:', error);
+          console.error('Error status:', error.status);
+          console.error('Error message:', error.error);
           
-          if (error.error?.errors && Array.isArray(error.error.errors)) {
-            this.errorMessage = error.error.errors.join(', ');
-          } else if (error.error?.message) {
-            this.errorMessage = error.error.message;
-          } else if (error.status === 400) {
-            this.errorMessage = 'Invalid registration data. Please check all fields and try again.';
-          } else {
-            this.errorMessage = 'An error occurred during registration. Please try again.';
+          // Check for duplicate email based on status code first
+          if (error.status === 400 || error.status === 409) {
+            this.errorMessage = 'This email is already registered. Please use a different email or try logging in.';
+            return;
           }
+          
+          let errorMsg = '';
+          if (error.error?.errors && Array.isArray(error.error.errors)) {
+            errorMsg = error.error.errors.join(', ');
+          } else if (error.error?.message) {
+            errorMsg = error.error.message;
+          } else if (error.error && typeof error.error === 'string') {
+            errorMsg = error.error;
+          } else {
+            errorMsg = 'An error occurred during registration. Please try again.';
+          }
+          
+          this.errorMessage = errorMsg || 'Registration failed. Please try again.';
         }
       });
     } else {
@@ -315,5 +355,10 @@ export class RegisterComponent {
   isFieldInvalid(fieldName: string): boolean {
     const field = this.registerForm.get(fieldName);
     return field ? field.invalid && (field.dirty || field.touched) : false;
+  }
+
+  onOtpAnimationComplete(): void {
+    this.showOtpAnimation = false;
+    this.router.navigate(['/auth/verify-email'], { queryParams: { email: this.pendingEmail } });
   }
 }

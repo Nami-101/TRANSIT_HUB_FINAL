@@ -9,6 +9,8 @@ export interface LoginResponse {
   refreshToken: string;
   expiresAt: Date;
   user: UserInfo;
+  requiresRoleSelection: boolean;
+  availableRoles: string[];
 }
 
 // Registration DTOs

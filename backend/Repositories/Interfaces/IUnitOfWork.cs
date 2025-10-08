@@ -22,6 +22,7 @@ namespace TransitHub.Repositories.Interfaces
         IGenericRepository<BookingAudit> BookingAudits { get; }
         IGenericRepository<Cancellation> Cancellations { get; }
         IGenericRepository<GmailVerificationToken> GmailVerificationTokens { get; }
+        IGenericRepository<EmailVerificationOtp> EmailVerificationOtps { get; }
         
         // Lookup Tables
         IGenericRepository<TrainQuotaType> TrainQuotaTypes { get; }

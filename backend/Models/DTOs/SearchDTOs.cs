@@ -5,22 +5,59 @@ namespace TransitHub.Models.DTOs
     // Train Search DTOs
     public class TrainSearchDto
     {
-        public int? SourceStationID { get; set; }
-        public int? DestinationStationID { get; set; }
-        public string? SourceStationCode { get; set; }
-        public string? DestinationStationCode { get; set; }
+        [Required]
+        public string SourceStation { get; set; } = string.Empty;
         
         [Required]
-        public DateOnly TravelDate { get; set; }
+        public string DestinationStation { get; set; } = string.Empty;
         
-        public int? QuotaTypeID { get; set; }
-        public int? TrainClassID { get; set; }
+        [Required]
+        public DateTime TravelDate { get; set; }
+        
+        public string? TrainClass { get; set; } // 2S, SL, 3A, FC, etc.
+        
+        public string? Quota { get; set; } // General, Tatkal, Ladies, Senior Citizen, etc.
         
         [Range(1, 6)]
         public int PassengerCount { get; set; } = 1;
     }
 
     public class TrainSearchResultDto
+    {
+        public int TrainID { get; set; }
+        public string TrainName { get; set; } = string.Empty;
+        public string TrainNumber { get; set; } = string.Empty;
+        public string SourceStation { get; set; } = string.Empty;
+        public string SourceStationCode { get; set; } = string.Empty;
+        public string DestinationStation { get; set; } = string.Empty;
+        public string DestinationStationCode { get; set; } = string.Empty;
+        public DateOnly TravelDate { get; set; }
+        public DateTime DepartureTime { get; set; }
+        public DateTime ArrivalTime { get; set; }
+        public int JourneyTimeMinutes { get; set; }
+        public int ScheduleID { get; set; }
+        public string QuotaName { get; set; } = string.Empty;
+        public string TrainClass { get; set; } = string.Empty;
+        public int TotalSeats { get; set; }
+        public int AvailableSeats { get; set; }
+        public decimal Fare { get; set; }
+        public string AvailabilityStatus { get; set; } = string.Empty;
+        public int AvailableOrWaitlistPosition { get; set; }
+    }
+
+    public class TrainClassAvailabilityDto
+    {
+        public int ScheduleID { get; set; }
+        public string TrainClass { get; set; } = string.Empty;
+        public int TotalSeats { get; set; }
+        public int AvailableSeats { get; set; }
+        public decimal Fare { get; set; }
+        public string AvailabilityStatus { get; set; } = string.Empty;
+        public int AvailableOrWaitlistPosition { get; set; }
+    }
+
+    // Internal DTO for raw stored procedure results
+    public class TrainSearchRawResultDto
     {
         public int ScheduleID { get; set; }
         public int TrainID { get; set; }
@@ -51,8 +88,7 @@ namespace TransitHub.Models.DTOs
         public string? SourceAirportCode { get; set; }
         public string? DestinationAirportCode { get; set; }
         
-        [Required]
-        public DateOnly TravelDate { get; set; }
+        public DateTime? TravelDate { get; set; }
         
         public int? FlightClassID { get; set; }
         
@@ -145,5 +181,10 @@ namespace TransitHub.Models.DTOs
         public int StatusID { get; set; }
         public string StatusName { get; set; } = string.Empty;
         public string? Description { get; set; }
+    }
+
+    public class WaitlistPositionDto
+    {
+        public int NextPosition { get; set; }
     }
 }

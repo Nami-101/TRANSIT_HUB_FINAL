@@ -1,24 +1,29 @@
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using TransitHub.Models;
 
 namespace TransitHub.Data
 {
-    public class TransitHubDbContext : DbContext
+    public class TransitHubDbContext : IdentityDbContext<IdentityUser>
     {
         public TransitHubDbContext(DbContextOptions<TransitHubDbContext> options) : base(options)
         {
         }
 
         // User Management
-        public DbSet<User> Users { get; set; }
+        public new DbSet<User> Users { get; set; }
         public DbSet<Admin> Admins { get; set; }
         public DbSet<GmailVerificationToken> GmailVerificationTokens { get; set; }
+        public DbSet<EmailVerificationOtp> EmailVerificationOtps { get; set; }
 
         // Master Data
         public DbSet<Station> Stations { get; set; }
         public DbSet<Airport> Airports { get; set; }
         public DbSet<Train> Trains { get; set; }
         public DbSet<Flight> Flights { get; set; }
+        public DbSet<Coach> Coaches { get; set; }
+        public DbSet<Seat> Seats { get; set; }
 
         // Lookup Tables
         public DbSet<TrainQuotaType> TrainQuotaTypes { get; set; }
@@ -34,6 +39,8 @@ namespace TransitHub.Data
         // Bookings
         public DbSet<Booking> Bookings { get; set; }
         public DbSet<BookingPassenger> BookingPassengers { get; set; }
+        public DbSet<TrainBooking> TrainBookings { get; set; }
+        public DbSet<TrainBookingPassenger> TrainBookingPassengers { get; set; }
         public DbSet<Payment> Payments { get; set; }
         public DbSet<WaitlistQueue> WaitlistQueues { get; set; }
         public DbSet<Cancellation> Cancellations { get; set; }
@@ -53,6 +60,7 @@ namespace TransitHub.Data
             ConfigureAirportRelationships(modelBuilder);
             ConfigureTrainRelationships(modelBuilder);
             ConfigureFlightRelationships(modelBuilder);
+            ConfigureCoachRelationships(modelBuilder);
             ConfigureBookingRelationships(modelBuilder);
             ConfigureIndexes(modelBuilder);
             ConfigureConstraints(modelBuilder);
@@ -124,6 +132,38 @@ namespace TransitHub.Data
                 .IsUnique();
         }
 
+        private void ConfigureCoachRelationships(ModelBuilder modelBuilder)
+        {
+            // Coach relationships
+            modelBuilder.Entity<Coach>()
+                .HasOne(c => c.Train)
+                .WithMany()
+                .HasForeignKey(c => c.TrainID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            modelBuilder.Entity<Coach>()
+                .HasOne(c => c.TrainClass)
+                .WithMany()
+                .HasForeignKey(c => c.TrainClassID)
+                .OnDelete(DeleteBehavior.Restrict);
+
+            // Seat relationships
+            modelBuilder.Entity<Seat>()
+                .HasOne(s => s.Coach)
+                .WithMany(c => c.Seats)
+                .HasForeignKey(s => s.CoachID)
+                .OnDelete(DeleteBehavior.Cascade);
+
+            // Unique constraints
+            modelBuilder.Entity<Coach>()
+                .HasIndex(c => new { c.TrainID, c.CoachNumber })
+                .IsUnique();
+
+            modelBuilder.Entity<Seat>()
+                .HasIndex(s => new { s.CoachID, s.SeatNumber })
+                .IsUnique();
+        }
+
         private void ConfigureBookingRelationships(ModelBuilder modelBuilder)
         {
             // Booking unique constraint
@@ -167,7 +207,7 @@ namespace TransitHub.Data
                 .HasIndex(sl => sl.CreatedAt);
 
             modelBuilder.Entity<WaitlistQueue>()
-                .HasIndex(wq => wq.QueuePosition);
+                .HasIndex(wq => wq.Position);
         }
 
         private void ConfigureConstraints(ModelBuilder modelBuilder)

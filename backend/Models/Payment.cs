@@ -47,66 +47,29 @@ namespace TransitHub.Models
         public int BookingID { get; set; }
 
         [Required]
+        public int TrainScheduleID { get; set; }
+
+        [Required]
+        public int Position { get; set; }
+
+        [Required]
+        public int Priority { get; set; } // 1 = Senior Citizen, 2 = Regular
+
         [MaxLength(10)]
-        public string ScheduleType { get; set; } = string.Empty; // Train, Flight
-
-        public int? TrainScheduleID { get; set; }
-
-        public int? FlightScheduleID { get; set; }
+        public string? TrainClass { get; set; } // 1A, 2S, SL, etc.
 
         [Required]
-        public int QueuePosition { get; set; }
+        public DateTime QueuedAt { get; set; } = DateTime.UtcNow;
 
-        [Required]
-        public int Priority { get; set; } = 1; // Higher number = higher priority
+        public DateTime? ConfirmedAt { get; set; }
 
         // Navigation Properties
         [ForeignKey("BookingID")]
         public virtual Booking Booking { get; set; } = null!;
 
         [ForeignKey("TrainScheduleID")]
-        public virtual TrainSchedule? TrainSchedule { get; set; }
-
-        [ForeignKey("FlightScheduleID")]
-        public virtual FlightSchedule? FlightSchedule { get; set; }
+        public virtual TrainSchedule TrainSchedule { get; set; } = null!;
     }
 
-    [Table("Cancellations")]
-    public class Cancellation
-    {
-        [Key]
-        public int CancellationID { get; set; }
 
-        [Required]
-        public int BookingID { get; set; }
-
-        [MaxLength(500)]
-        public string? CancellationReason { get; set; }
-
-        [Required]
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal RefundAmount { get; set; } = 0;
-
-        [Required]
-        [Column(TypeName = "decimal(10,2)")]
-        public decimal CancellationFee { get; set; } = 0;
-
-        [Required]
-        [MaxLength(100)]
-        public string CancelledBy { get; set; } = string.Empty;
-
-        [Required]
-        public DateTime CancelledAt { get; set; } = DateTime.UtcNow;
-
-        [Required]
-        [MaxLength(100)]
-        public string CreatedBy { get; set; } = "System";
-
-        [Required]
-        public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
-
-        // Navigation Properties
-        [ForeignKey("BookingID")]
-        public virtual Booking Booking { get; set; } = null!;
-    }
 }

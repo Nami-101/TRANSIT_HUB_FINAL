@@ -6,6 +6,8 @@ namespace TransitHub.Models.DTOs
         public string RefreshToken { get; set; } = string.Empty;
         public DateTime ExpiresAt { get; set; }
         public UserInfo User { get; set; } = new();
+        public bool RequiresRoleSelection { get; set; }
+        public List<string> AvailableRoles { get; set; } = new();
     }
 
     public class UserInfo

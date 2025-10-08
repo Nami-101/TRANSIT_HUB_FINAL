@@ -1,0 +1,89 @@
+<div class="profile-container">
+  <div class="profile-card">
+    <div class="profile-header">
+      <div class="avatar-section">
+        <div class="avatar-display" [style.background-color]="getAvatarColor()">
+          {{ getDisplayAvatar() }}
+        </div>
+        <h2>My Profile</h2>
+      </div>
+      <button *ngIf="!isEditing" mat-raised-button color="primary" (click)="toggleEdit()">
+        <mat-icon>edit</mat-icon>
+        Edit Profile
+      </button>
+    </div>
+
+    <form [formGroup]="profileForm" (ngSubmit)="saveProfile()" class="profile-form">
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Name</mat-label>
+          <input matInput formControlName="name" [readonly]="!isEditing">
+          <mat-error *ngIf="profileForm.get('name')?.hasError('required')">
+            Name is required
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Email</mat-label>
+          <input matInput formControlName="email" readonly>
+          <mat-hint>Email cannot be changed</mat-hint>
+        </mat-form-field>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>User Role</mat-label>
+          <input matInput [value]="getUserRole()" readonly>
+          <mat-hint>Role is assigned by system</mat-hint>
+        </mat-form-field>
+
+        <div class="spacer"></div>
+      </div>
+
+      <div class="form-row">
+        <mat-form-field appearance="outline">
+          <mat-label>Phone Number</mat-label>
+          <input matInput formControlName="phone" [readonly]="!isEditing">
+          <mat-error *ngIf="profileForm.get('phone')?.hasError('pattern')">
+            Enter valid Indian phone number
+          </mat-error>
+        </mat-form-field>
+
+        <mat-form-field appearance="outline">
+          <mat-label>Age</mat-label>
+          <input matInput type="number" formControlName="age" [readonly]="!isEditing">
+          <mat-error *ngIf="profileForm.get('age')?.hasError('min')">
+            Age must be at least 1
+          </mat-error>
+          <mat-error *ngIf="profileForm.get('age')?.hasError('max')">
+            Age must be less than 120
+          </mat-error>
+        </mat-form-field>
+      </div>
+
+      <div *ngIf="isEditing" class="avatar-selection">
+        <h3>Choose Avatar</h3>
+        <div class="avatar-grid">
+          <div *ngFor="let avatar of avatars" 
+               class="avatar-option"
+               [class.selected]="selectedAvatarId === avatar.id"
+               [style.background-color]="avatar.color"
+               (click)="selectAvatar(avatar.id)">
+            {{ avatar.emoji }}
+          </div>
+        </div>
+      </div>
+
+      <div *ngIf="isEditing" class="form-actions">
+        <button type="button" mat-button (click)="cancelEdit()">
+          <mat-icon>cancel</mat-icon>
+          Cancel
+        </button>
+        <button type="submit" mat-raised-button color="primary" [disabled]="profileForm.invalid || loading">
+          <mat-icon>save</mat-icon>
+          Save Changes
+        </button>
+      </div>
+    </form>
+  </div>
+</div>

@@ -37,6 +37,13 @@ namespace TransitHub.Models
         [Required]
         public bool IsVerified { get; set; } = false;
 
+        // Avatar selection (null = use first letter of name)
+        public int? AvatarId { get; set; }
+
+        // Password reset fields
+        public string? ResetToken { get; set; }
+        public DateTime? ResetTokenExpiry { get; set; }
+
         // Navigation Properties
         public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
         public virtual ICollection<GmailVerificationToken> VerificationTokens { get; set; } = new List<GmailVerificationToken>();

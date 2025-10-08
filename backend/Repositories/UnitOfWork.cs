@@ -33,6 +33,7 @@ namespace TransitHub.Repositories
         private IGenericRepository<BookingAudit>? _bookingAudits;
         private IGenericRepository<Cancellation>? _cancellations;
         private IGenericRepository<GmailVerificationToken>? _gmailVerificationTokens;
+        private IGenericRepository<EmailVerificationOtp>? _emailVerificationOtps;
         
         // Lookup repositories
         private IGenericRepository<TrainQuotaType>? _trainQuotaTypes;
@@ -64,6 +65,7 @@ namespace TransitHub.Repositories
         public IGenericRepository<BookingAudit> BookingAudits => _bookingAudits ??= new GenericRepository<BookingAudit>(_context);
         public IGenericRepository<Cancellation> Cancellations => _cancellations ??= new GenericRepository<Cancellation>(_context);
         public IGenericRepository<GmailVerificationToken> GmailVerificationTokens => _gmailVerificationTokens ??= new GenericRepository<GmailVerificationToken>(_context);
+        public IGenericRepository<EmailVerificationOtp> EmailVerificationOtps => _emailVerificationOtps ??= new GenericRepository<EmailVerificationOtp>(_context);
         
         // Lookup Tables
         public IGenericRepository<TrainQuotaType> TrainQuotaTypes => _trainQuotaTypes ??= new GenericRepository<TrainQuotaType>(_context);

@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "E:\\FINAL_PROJECT\\Transit-Hub\\backend\\TransitHub.csproj": {}
+    "C:\\Users\\NAMITH\\OneDrive\\Desktop\\Transit-Hub\\backend\\TransitHub.csproj": {}
   },
   "projects": {
-    "E:\\FINAL_PROJECT\\Transit-Hub\\backend\\TransitHub.csproj": {
+    "C:\\Users\\NAMITH\\OneDrive\\Desktop\\Transit-Hub\\backend\\TransitHub.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "E:\\FINAL_PROJECT\\Transit-Hub\\backend\\TransitHub.csproj",
+        "projectUniqueName": "C:\\Users\\NAMITH\\OneDrive\\Desktop\\Transit-Hub\\backend\\TransitHub.csproj",
         "projectName": "TransitHub",
-        "projectPath": "E:\\FINAL_PROJECT\\Transit-Hub\\backend\\TransitHub.csproj",
+        "projectPath": "C:\\Users\\NAMITH\\OneDrive\\Desktop\\Transit-Hub\\backend\\TransitHub.csproj",
         "packagesPath": "C:\\Users\\NAMITH\\.nuget\\packages\\",
-        "outputPath": "E:\\FINAL_PROJECT\\Transit-Hub\\backend\\obj\\",
+        "outputPath": "C:\\Users\\NAMITH\\OneDrive\\Desktop\\Transit-Hub\\backend\\obj\\",
         "projectStyle": "PackageReference",
         "fallbackFolders": [
           "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
@@ -85,7 +85,7 @@
             },
             "System.IdentityModel.Tokens.Jwt": {
               "target": "Package",
-              "version": "[7.0.3, )"
+              "version": "[8.0.0, )"
             }
           },
           "imports": [

@@ -13,7 +13,7 @@ using System.Reflection;
 [assembly: System.Reflection.AssemblyCompanyAttribute("TransitHub")]
 [assembly: System.Reflection.AssemblyConfigurationAttribute("Debug")]
 [assembly: System.Reflection.AssemblyFileVersionAttribute("1.0.0.0")]
-[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+ee15821ae54c6ffa4dc8d25e6c50b8220702b450")]
+[assembly: System.Reflection.AssemblyInformationalVersionAttribute("1.0.0+d7f883b78cceffef371305b138de8f4e3cd3fdad")]
 [assembly: System.Reflection.AssemblyProductAttribute("TransitHub")]
 [assembly: System.Reflection.AssemblyTitleAttribute("TransitHub")]
 [assembly: System.Reflection.AssemblyVersionAttribute("1.0.0.0")]

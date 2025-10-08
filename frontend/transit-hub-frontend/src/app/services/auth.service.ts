@@ -26,11 +26,28 @@ export class AuthService {
     return this.http.post<ApiResponse<LoginResponse>>(`${this.apiUrl}/login`, credentials)
       .pipe(
         tap(response => {
-          if (response.success && response.data) {
+          if (response.success && response.data && !response.data.requiresRoleSelection) {
             this.handleAuthSuccess(response.data);
           }
         })
       );
+  }
+
+  /**
+   * Admin login with role selection
+   */
+  loginWithRole(credentials: LoginRequest & { selectedRole: string }): Observable<ApiResponse<LoginResponse>> {
+    return this.http.post<ApiResponse<LoginResponse>>(`${this.apiUrl}/login-with-role`, {
+      email: credentials.email,
+      password: credentials.password,
+      selectedRole: credentials.selectedRole
+    }).pipe(
+      tap(response => {
+        if (response.success && response.data) {
+          this.handleAuthSuccess(response.data);
+        }
+      })
+    );
   }
 
   /**
@@ -57,9 +74,19 @@ export class AuthService {
    */
   refreshToken(): Observable<ApiResponse<LoginResponse>> {
     const refreshToken = this.getRefreshToken();
-    return this.http.post<ApiResponse<LoginResponse>>(`${this.apiUrl}/refresh`, refreshToken)
+    console.log('Attempting token refresh with:', refreshToken ? 'token present' : 'no token');
+    
+    if (!refreshToken) {
+      console.error('No refresh token available');
+      return new Observable(observer => {
+        observer.error(new Error('No refresh token available'));
+      });
+    }
+    
+    return this.http.post<ApiResponse<LoginResponse>>(`${this.apiUrl}/refresh`, { refreshToken })
       .pipe(
         tap(response => {
+          console.log('Refresh token response:', response);
           if (response.success && response.data) {
             this.handleAuthSuccess(response.data);
           }
@@ -92,6 +119,29 @@ export class AuthService {
   }
 
   /**
+   * Check if user has specific role
+   */
+  hasRole(role: string): boolean {
+    const token = this.getToken();
+    if (!token || !this.isAuthenticated()) return false;
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const userRoles = payload['http://schemas.microsoft.com/ws/2008/06/identity/claims/role'];
+      
+      if (Array.isArray(userRoles)) {
+        return userRoles.includes(role);
+      } else if (typeof userRoles === 'string') {
+        return userRoles === role;
+      }
+      
+      return false;
+    } catch {
+      return false;
+    }
+  }
+
+  /**
    * Get current user value
    */
   get currentUserValue(): UserInfo | null {
@@ -113,9 +163,84 @@ export class AuthService {
   }
 
   /**
+   * Get current user ID from JWT token
+   */
+  getCurrentUserId(): string | null {
+    const token = this.getToken();
+    if (!token || !this.isAuthenticated()) return null;
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      return payload.sub || payload.id || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Get current user email from JWT token
+   */
+  getCurrentUserEmail(): string | null {
+    const token = this.getToken();
+    if (!token || !this.isAuthenticated()) return null;
+    
+    try {
+      const payload = JSON.parse(atob(token.split('.')[1]));
+      const name = payload['http://schemas.xmlsoap.org/ws/2005/05/identity/claims/name'];
+      const email = payload.email;
+      
+      // Handle array case
+      if (Array.isArray(name)) {
+        return name[0] || null;
+      }
+      if (Array.isArray(email)) {
+        return email[0] || null;
+      }
+      
+      return name || email || null;
+    } catch {
+      return null;
+    }
+  }
+
+  /**
+   * Verify email with OTP
+   */
+  verifyEmail(email: string, otp: string): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/verify-email`, { email, otp });
+  }
+
+  /**
+   * Resend OTP for email verification
+   */
+  resendOtp(email: string): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/resend-otp`, { email });
+  }
+
+  /**
+   * Forgot password
+   */
+  forgotPassword(request: { email: string }): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/forgot-password`, request);
+  }
+
+  /**
+   * Reset password
+   */
+  resetPassword(request: { token: string; newPassword: string }): Observable<ApiResponse> {
+    return this.http.post<ApiResponse>(`${this.apiUrl}/reset-password`, request);
+  }
+
+  /**
    * Handle successful authentication
    */
   private handleAuthSuccess(authData: LoginResponse): void {
+    console.log('Handling auth success with data:', {
+      hasToken: !!authData.token,
+      hasRefreshToken: !!authData.refreshToken,
+      user: authData.user?.email || 'unknown'
+    });
+    
     // Store tokens
     localStorage.setItem('jwt_token', authData.token);
     localStorage.setItem('refresh_token', authData.refreshToken);

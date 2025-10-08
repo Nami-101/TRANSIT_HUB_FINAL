@@ -2,107 +2,52 @@ using System.ComponentModel.DataAnnotations;
 
 namespace TransitHub.Models.DTOs
 {
-    // Registration DTOs
-    public class UserRegistrationDto
+    public class UserProfileDto
     {
-        [Required]
-        [MaxLength(100)]
-        public string Name { get; set; } = string.Empty;
-
-        [Required]
-        [EmailAddress]
-        [MaxLength(255)]
+        public string Id { get; set; } = string.Empty;
         public string Email { get; set; } = string.Empty;
-
-        [Required]
-        [MinLength(8)]
-        public string Password { get; set; } = string.Empty;
-
-        [Required]
-        [Phone]
-        [MaxLength(15)]
-        public string Phone { get; set; } = string.Empty;
-
-        [Required]
-        [Range(0, 120)]
-        public int Age { get; set; }
-    }
-
-    public class UserRegistrationResponseDto
-    {
-        public int UserID { get; set; }
-        public string VerificationToken { get; set; } = string.Empty;
-        public string Message { get; set; } = string.Empty;
-        public bool Success { get; set; }
-    }
-
-    // Login DTOs
-    public class UserLoginDto
-    {
-        [Required]
-        [EmailAddress]
-        public string Email { get; set; } = string.Empty;
-
-        [Required]
-        public string Password { get; set; } = string.Empty;
-    }
-
-    public class UserLoginResponseDto
-    {
-        public int UserID { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public int Age { get; set; }
-        public bool IsSeniorCitizen { get; set; }
-        public string Message { get; set; } = string.Empty;
-        public bool Success { get; set; }
-        public string? Token { get; set; } // JWT token will be added by controller
-    }
-
-    // Verification DTOs
-    public class VerificationResponseDto
-    {
-        public string Message { get; set; } = string.Empty;
-        public bool Success { get; set; }
-    }
-
-    // Profile DTOs
-    public class UserProfileResponseDto
-    {
-        public int UserID { get; set; }
-        public string Name { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
-        public string Phone { get; set; } = string.Empty;
-        public int Age { get; set; }
-        public bool IsSeniorCitizen { get; set; }
-        public bool IsVerified { get; set; }
+        public string FirstName { get; set; } = string.Empty;
+        public string LastName { get; set; } = string.Empty;
+        public string? PhoneNumber { get; set; }
+        public DateTime? DateOfBirth { get; set; }
+        public string? Gender { get; set; }
+        public bool EmailConfirmed { get; set; }
+        public bool PhoneNumberConfirmed { get; set; }
         public DateTime CreatedAt { get; set; }
-        public int TotalBookings { get; set; }
-        public int ConfirmedBookings { get; set; }
-        public int CancelledBookings { get; set; }
-        public int WaitlistedBookings { get; set; }
     }
 
     public class UpdateUserProfileDto
     {
-        [Required]
-        [MaxLength(100)]
-        public string Name { get; set; } = string.Empty;
+        [StringLength(50, ErrorMessage = "First name cannot exceed 50 characters")]
+        public string FirstName { get; set; } = string.Empty;
 
-        [Required]
-        [Phone]
-        [MaxLength(15)]
-        public string Phone { get; set; } = string.Empty;
+        [StringLength(50, ErrorMessage = "Last name cannot exceed 50 characters")]
+        public string LastName { get; set; } = string.Empty;
 
-        [Required]
-        [Range(0, 120)]
-        public int Age { get; set; }
+        [Phone(ErrorMessage = "Invalid phone number format")]
+        public string? PhoneNumber { get; set; }
+
+        [DataType(DataType.Date)]
+        public DateTime? DateOfBirth { get; set; }
+
+        public string? Gender { get; set; }
     }
 
-    public class UpdateProfileResponseDto
+    public class ChangePasswordDto
     {
-        public string Message { get; set; } = string.Empty;
-        public bool Success { get; set; }
+        [Required(ErrorMessage = "Current password is required")]
+        public string CurrentPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "New password is required")]
+        [StringLength(100, MinimumLength = 6, ErrorMessage = "Password must be between 6 and 100 characters")]
+        [RegularExpression(@"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])[A-Za-z\d@$!%*?&]+$",
+            ErrorMessage = "Password must contain at least one uppercase letter, one lowercase letter, one digit and one special character")]
+        public string NewPassword { get; set; } = string.Empty;
+
+        [Required(ErrorMessage = "Confirm password is required")]
+        [Compare("NewPassword", ErrorMessage = "New password and confirmation password do not match")]
+        public string ConfirmNewPassword { get; set; } = string.Empty;
     }
+
+
 }

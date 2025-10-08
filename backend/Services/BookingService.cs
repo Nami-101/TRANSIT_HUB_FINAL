@@ -10,11 +10,15 @@ namespace TransitHub.Services
     {
         private readonly IUnitOfWork _unitOfWork;
         private readonly ILogger<BookingService> _logger;
+        private readonly IEmailService _emailService;
+        private readonly INotificationService _notificationService;
 
-        public BookingService(IUnitOfWork unitOfWork, ILogger<BookingService> logger)
+        public BookingService(IUnitOfWork unitOfWork, ILogger<BookingService> logger, IEmailService emailService, INotificationService notificationService)
         {
             _unitOfWork = unitOfWork;
             _logger = logger;
+            _emailService = emailService;
+            _notificationService = notificationService;
         }
 
         public async Task<BookingResponseDto> CreateTrainBookingAsync(CreateTrainBookingDto bookingDto)
@@ -53,6 +57,19 @@ namespace TransitHub.Services
                 }
 
                 _logger.LogInformation("Train booking created successfully: {BookingReference}", response.BookingReference);
+                
+                // Send booking confirmation email
+                await SendBookingConfirmationEmail(bookingDto.UserID, response, "Train");
+                
+                // Create notification
+                await _notificationService.CreateNotificationAsync(
+                    bookingDto.UserID,
+                    "Booking Confirmed",
+                    $"Your train booking {response.BookingReference} has been confirmed.",
+                    "confirmed",
+                    response.BookingID
+                );
+                
                 return response;
             }
             catch (SqlException ex) when (ex.Number >= 50016 && ex.Number <= 50022)
@@ -111,6 +128,10 @@ namespace TransitHub.Services
                 }
 
                 _logger.LogInformation("Flight booking created successfully: {BookingReference}", response.BookingReference);
+                
+                // Send booking confirmation email
+                await SendBookingConfirmationEmail(bookingDto.UserID, response, "Flight");
+                
                 return response;
             }
             catch (SqlException ex) when (ex.Number >= 50016 && ex.Number <= 50022)
@@ -272,6 +293,10 @@ namespace TransitHub.Services
                 }
 
                 _logger.LogInformation("Booking cancelled successfully: {BookingId}", bookingId);
+                
+                // Send cancellation confirmation email
+                await SendCancellationConfirmationEmail(userId, bookingId, response);
+                
                 return response;
             }
             catch (ArgumentException)
@@ -295,6 +320,72 @@ namespace TransitHub.Services
                     Success = false,
                     Message = "Booking cancellation failed due to a system error. Please try again later."
                 };
+            }
+        }
+
+        private async Task SendBookingConfirmationEmail(int userId, BookingResponseDto booking, string bookingType)
+        {
+            try
+            {
+                _logger.LogInformation("Attempting to send booking confirmation email for user {UserId}, booking {BookingReference}", userId, booking.BookingReference);
+                
+                var user = await _unitOfWork.Users.GetByIdAsync(userId);
+                _logger.LogInformation("Retrieved user: {UserEmail}, Name: {UserName}", user?.Email, user?.Name);
+                
+                if (user?.Email != null)
+                {
+                    _logger.LogInformation("Calling email service for booking confirmation to {Email}", user.Email);
+                    await _emailService.SendBookingConfirmationEmailAsync(
+                        user.Email, 
+                        user.Name, 
+                        booking.BookingReference, 
+                        $"{bookingType} Booking", 
+                        booking.TotalAmount
+                    );
+                    _logger.LogInformation("Email service call completed for booking {BookingReference}", booking.BookingReference);
+                }
+                else
+                {
+                    _logger.LogWarning("User email is null for user {UserId}, cannot send confirmation email", userId);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send booking confirmation email for booking {BookingReference}", booking.BookingReference);
+            }
+        }
+
+        private async Task SendCancellationConfirmationEmail(int userId, int bookingId, CancellationResponseDto cancellation)
+        {
+            try
+            {
+                _logger.LogInformation("Attempting to send cancellation email for user {UserId}, booking {BookingId}", userId, bookingId);
+                
+                var user = await _unitOfWork.Users.GetByIdAsync(userId);
+                var booking = await _unitOfWork.Bookings.GetByIdAsync(bookingId);
+                
+                _logger.LogInformation("Retrieved user: {UserEmail}, booking: {BookingRef}", user?.Email, booking?.BookingReference);
+                
+                if (user?.Email != null && booking != null)
+                {
+                    _logger.LogInformation("Calling email service for cancellation to {Email}", user.Email);
+                    await _emailService.SendBookingCancellationEmailAsync(
+                        user.Email, 
+                        user.Name, 
+                        booking.BookingReference, 
+                        "Train Booking", 
+                        0m
+                    );
+                    _logger.LogInformation("Cancellation email service call completed for booking {BookingReference}", booking.BookingReference);
+                }
+                else
+                {
+                    _logger.LogWarning("Cannot send cancellation email - User email: {Email}, Booking: {Booking}", user?.Email, booking?.BookingReference);
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Failed to send cancellation confirmation email for booking {BookingId}", bookingId);
             }
         }
     }

@@ -1,16 +1,13 @@
 export interface TrainSearchDto {
-  sourceStationID?: number;
-  destinationStationID?: number;
-  sourceStationCode?: string;
-  destinationStationCode?: string;
-  travelDate: string; // DateOnly as string
-  quotaTypeID?: number;
-  trainClassID?: number;
-  passengerCount: number; // 1-6, default 1
+  sourceStation: string;
+  destinationStation: string;
+  travelDate: Date;
+  trainClass?: string; // 2S, SL, 3A, FC, etc.
+  quota?: string; // General, Tatkal, Ladies, Senior Citizen, etc.
+  passengerCount: number;
 }
 
 export interface TrainSearchResultDto {
-  scheduleID: number;
   trainID: number;
   trainName: string;
   trainNumber: string;
@@ -22,7 +19,17 @@ export interface TrainSearchResultDto {
   departureTime: string;
   arrivalTime: string;
   journeyTimeMinutes: number;
-  quotaName: string;
+  scheduleID: number;
+  trainClass: string;
+  totalSeats: number;
+  availableSeats: number;
+  fare: number;
+  availabilityStatus: string;
+  availableOrWaitlistPosition: number;
+}
+
+export interface TrainClassAvailabilityDto {
+  scheduleID: number;
   trainClass: string;
   totalSeats: number;
   availableSeats: number;

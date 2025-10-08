@@ -46,6 +46,33 @@ namespace TransitHub.Controllers
         }
 
         /// <summary>
+        /// Admin login with role selection endpoint
+        /// </summary>
+        /// <param name="request">Login credentials with selected role</param>
+        /// <returns>JWT token and user information</returns>
+        [HttpPost("login-with-role")]
+        public async Task<ActionResult<ApiResponse<LoginResponse>>> LoginWithRole([FromBody] LoginWithRoleRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                return BadRequest(ApiResponse<LoginResponse>.ErrorResult("Validation failed", errors));
+            }
+
+            var result = await _authService.LoginWithRoleAsync(request);
+
+            if (!result.Success)
+            {
+                return Unauthorized(result);
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
         /// User registration endpoint
         /// </summary>
         /// <param name="request">Registration details</param>
@@ -104,6 +131,110 @@ namespace TransitHub.Controllers
             if (!result.Success)
             {
                 return Unauthorized(result);
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Verify email with OTP
+        /// </summary>
+        /// <param name="request">Email verification request</param>
+        /// <returns>Verification result</returns>
+        [HttpPost("verify-email")]
+        public async Task<ActionResult<ApiResponse>> VerifyEmail([FromBody] VerifyEmailRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                return BadRequest(ApiResponse.ErrorResult("Validation failed", errors));
+            }
+
+            var result = await _authService.VerifyEmailAsync(request);
+
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Resend OTP for email verification
+        /// </summary>
+        /// <param name="request">Resend OTP request</param>
+        /// <returns>Resend result</returns>
+        [HttpPost("resend-otp")]
+        public async Task<ActionResult<ApiResponse>> ResendOtp([FromBody] ResendOtpRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                return BadRequest(ApiResponse.ErrorResult("Validation failed", errors));
+            }
+
+            var result = await _authService.ResendOtpAsync(request);
+
+            if (!result.Success)
+            {
+                return BadRequest(result);
+            }
+
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Forgot password endpoint
+        /// </summary>
+        /// <param name="request">Forgot password request</param>
+        /// <returns>Forgot password result</returns>
+        [HttpPost("forgot-password")]
+        public async Task<ActionResult<ApiResponse>> ForgotPassword([FromBody] ForgotPasswordRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                return BadRequest(ApiResponse.ErrorResult("Validation failed", errors));
+            }
+
+            // Get the frontend URL from the request
+            var origin = Request.Headers["Origin"].FirstOrDefault() ?? "http://localhost:4200";
+            var result = await _authService.ForgotPasswordAsync(request, origin);
+            return Ok(result);
+        }
+
+        /// <summary>
+        /// Reset password endpoint
+        /// </summary>
+        /// <param name="request">Reset password request</param>
+        /// <returns>Reset password result</returns>
+        [HttpPost("reset-password")]
+        public async Task<ActionResult<ApiResponse>> ResetPassword([FromBody] ResetPasswordRequest request)
+        {
+            if (!ModelState.IsValid)
+            {
+                var errors = ModelState.Values
+                    .SelectMany(v => v.Errors)
+                    .Select(e => e.ErrorMessage)
+                    .ToList();
+                return BadRequest(ApiResponse.ErrorResult("Validation failed", errors));
+            }
+
+            var result = await _authService.ResetPasswordAsync(request);
+            
+            if (!result.Success)
+            {
+                return BadRequest(result);
             }
 
             return Ok(result);

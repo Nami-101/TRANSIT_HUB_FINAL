@@ -14,19 +14,19 @@ export class LookupService {
   constructor(private http: HttpClient) { }
 
   fetchStations(): Observable<StationDto[]> {
-    return this.http.get<StationDto[]>(`${this.baseUrl}/search/stations`).pipe(
+    return this.http.get<StationDto[]>(`${this.baseUrl}/test/stations`).pipe(
       timeout(10000) // 10 second timeout
     );
   }
 
   fetchAirports(): Observable<AirportDto[]> {
-    return this.http.get<AirportDto[]>(`${this.baseUrl}/search/airports`).pipe(
+    return this.http.get<AirportDto[]>(`${this.baseUrl}/test/airports`).pipe(
       timeout(10000) // 10 second timeout
     );
   }
 
   fetchLookupData(): Observable<LookupDataDto> {
-    return this.http.get<LookupDataDto>(`${this.baseUrl}/search/lookup-data`).pipe(
+    return this.http.get<LookupDataDto>(`${this.baseUrl}/test/lookup`).pipe(
       timeout(10000) // 10 second timeout
     );
   }

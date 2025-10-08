@@ -1,162 +1,164 @@
-<div class="bg-white rounded-lg shadow-lg overflow-hidden">
-  <div class="px-6 py-4 bg-gray-50 border-b">
-    <h2 class="text-xl font-semibold text-gray-900">
-      Search Results ({{ results.length }} {{ searchMode }}{{ results.length !== 1 ? 's' : '' }} found)
-    </h2>
-  </div>
+<!-- Search Results Header -->
+<div class="mb-4 px-2 sm:px-0">
+  <h2 class="text-lg sm:text-xl font-semibold text-gray-900">
+    {{ results.length }} {{ searchMode }}{{ results.length !== 1 ? 's' : '' }} found
+  </h2>
+</div>
 
-  <div class="overflow-x-auto">
-    <table mat-table [dataSource]="results" class="w-full">
-      
-      <!-- Train Number / Flight Number Column -->
-      <ng-container matColumnDef="trainNumber">
-        <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-700">Train No.</th>
-        <td mat-cell *matCellDef="let result" class="font-medium text-blue-600">
-          {{ isTrainResult(result) ? result.trainNumber : '' }}
-        </td>
-      </ng-container>
+<!-- IRCTC-Style Cards -->
+<div class="space-y-4 px-2 sm:px-0">
+  <div *ngFor="let result of results" class="bg-white rounded-lg shadow-md border border-gray-200 hover:shadow-lg transition-shadow duration-200">
+    
+    <!-- Train Class Card -->
+    <div *ngIf="isTrainResult(result)" class="p-3 sm:p-4">
+      <!-- Header -->
+      <div class="flex flex-col sm:flex-row sm:justify-between sm:items-start mb-3 space-y-2 sm:space-y-0">
+        <div class="flex-1">
+          <h3 class="text-base sm:text-lg font-semibold text-blue-600">{{ result.trainNumber }}</h3>
+          <p class="text-sm sm:text-base text-gray-700 font-medium">{{ result.trainName }}</p>
+          <span class="inline-block mt-1 px-2 sm:px-3 py-1 bg-blue-100 text-blue-800 rounded-full text-xs sm:text-sm font-medium">
+            {{ result.trainClass }}
+          </span>
+        </div>
+        <div class="text-left sm:text-right">
+          <div class="text-xl sm:text-2xl font-bold text-green-600">₹{{ result.fare | number:'1.0-0' }}</div>
+          <div class="text-xs text-gray-500">per person</div>
+        </div>
+      </div>
 
-      <ng-container matColumnDef="flightNumber">
-        <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-700">Flight No.</th>
-        <td mat-cell *matCellDef="let result" class="font-medium text-blue-600">
-          {{ isFlightResult(result) ? result.flightNumber : '' }}
-        </td>
-      </ng-container>
-
-      <!-- Name / Airline Column -->
-      <ng-container matColumnDef="trainName">
-        <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-700">Train Name</th>
-        <td mat-cell *matCellDef="let result" class="text-gray-900">
-          {{ isTrainResult(result) ? result.trainName : '' }}
-        </td>
-      </ng-container>
-
-      <ng-container matColumnDef="airline">
-        <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-700">Airline</th>
-        <td mat-cell *matCellDef="let result" class="text-gray-900">
-          {{ isFlightResult(result) ? result.airline : '' }}
-        </td>
-      </ng-container>
-
-      <!-- Route Column -->
-      <ng-container matColumnDef="route">
-        <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-700">Route</th>
-        <td mat-cell *matCellDef="let result" class="text-sm">
-          <div class="flex flex-col space-y-1">
-            <div class="flex items-center">
-              <span class="font-medium">
-                {{ isTrainResult(result) ? result.sourceStationCode : (isFlightResult(result) ? result.sourceAirportCode : '') }}
-              </span>
-              <span class="mx-2 text-gray-400">→</span>
-              <span class="font-medium">
-                {{ isTrainResult(result) ? result.destinationStationCode : (isFlightResult(result) ? result.destinationAirportCode : '') }}
-              </span>
+      <!-- Route & Timing -->
+      <div class="bg-gray-50 rounded-lg p-2 sm:p-3 mb-3">
+        <div class="flex items-center justify-between">
+          <div class="text-center flex-shrink-0">
+            <div class="text-sm sm:text-lg font-bold text-gray-900">{{ formatTime(result.departureTime) }}</div>
+            <div class="text-xs sm:text-sm text-gray-600">{{ result.sourceStationCode }}</div>
+            <div class="text-xs text-gray-500 hidden sm:block">{{ formatDate(result.travelDate) }}</div>
+          </div>
+          
+          <div class="flex-1 mx-2 sm:mx-4">
+            <div class="flex items-center justify-center">
+              <div class="flex-1 border-t-2 border-dashed border-gray-300"></div>
+              <div class="mx-1 sm:mx-2 text-xs text-gray-500 bg-white px-1 sm:px-2 py-1 rounded whitespace-nowrap">
+                {{ formatDuration(result.journeyTimeMinutes) }}
+              </div>
+              <div class="flex-1 border-t-2 border-dashed border-gray-300"></div>
             </div>
-            <div class="text-xs text-gray-500">
-              {{ isTrainResult(result) ? result.sourceStation + ' → ' + result.destinationStation : 
-                 (isFlightResult(result) ? result.sourceCity + ' → ' + result.destinationCity : '') }}
+            <div class="text-center text-xs text-gray-500 mt-1 hidden sm:block">
+              {{ result.sourceStation }} → {{ result.destinationStation }}
             </div>
           </div>
-        </td>
-      </ng-container>
-
-      <!-- Timing Column -->
-      <ng-container matColumnDef="timing">
-        <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-700">Timing</th>
-        <td mat-cell *matCellDef="let result" class="text-sm">
-          <div class="flex flex-col space-y-1">
-            <div class="flex items-center space-x-2">
-              <span class="font-medium">{{ formatTime(result.departureTime) }}</span>
-              <span class="text-gray-400">→</span>
-              <span class="font-medium">{{ formatTime(result.arrivalTime) }}</span>
-            </div>
-            <div class="text-xs text-gray-500">
-              {{ formatDuration(isTrainResult(result) ? result.journeyTimeMinutes : 
-                                (isFlightResult(result) ? result.flightTimeMinutes : 0)) }}
-            </div>
-            <div class="text-xs text-gray-500">
-              {{ formatDate(result.travelDate) }}
-            </div>
+          
+          <div class="text-center flex-shrink-0">
+            <div class="text-sm sm:text-lg font-bold text-gray-900">{{ formatTime(result.arrivalTime) }}</div>
+            <div class="text-xs sm:text-sm text-gray-600">{{ result.destinationStationCode }}</div>
+            <div class="text-xs text-gray-500 hidden sm:block">{{ formatDate(result.travelDate) }}</div>
           </div>
-        </td>
-      </ng-container>
+        </div>
+        <div class="text-center text-xs text-gray-500 mt-2 sm:hidden">
+          {{ result.sourceStation }} → {{ result.destinationStation }}
+        </div>
+      </div>
 
-      <!-- Class Column -->
-      <ng-container matColumnDef="class">
-        <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-700">Class</th>
-        <td mat-cell *matCellDef="let result" class="text-sm">
-          <span class="px-2 py-1 bg-blue-100 text-blue-800 rounded-full text-xs font-medium">
-            {{ isTrainResult(result) ? result.trainClass : (isFlightResult(result) ? result.flightClass : '') }}
+      <!-- Availability & Book -->
+      <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-2 sm:space-y-0">
+        <div class="flex flex-wrap items-center gap-2 sm:space-x-3">
+          <span class="px-2 py-1 rounded-full text-xs font-medium" 
+                [ngClass]="isTrainDeparted(result) ? getAvailabilityClass('departed') : getAvailabilityClass(result.availabilityStatus)">
+            {{ isTrainDeparted(result) ? 'Departed' : result.availabilityStatus }}
           </span>
-        </td>
-      </ng-container>
+          <span class="text-xs sm:text-sm text-gray-600">{{ result.availableSeats }}/{{ result.totalSeats }} seats</span>
+          <div *ngIf="result.availabilityStatus === 'Waitlist' && !isTrainDeparted(result)" class="text-xs text-red-600">
+            WL: {{ result.availableOrWaitlistPosition || 0 }}
+          </div>
+        </div>
+        
+        <button 
+          mat-raised-button 
+          [color]="isTrainDeparted(result) ? 'warn' : 'primary'" 
+          (click)="onBook(result)"
+          [disabled]="isBookingDisabled(result)"
+          class="w-full sm:w-auto px-4 sm:px-8 py-2 text-sm sm:text-base"
+          *ngIf="!isAdmin()">
+          {{ getBookingButtonText(result) }}
+        </button>
+      </div>
+    </div>
 
-      <!-- Quota Column (Train only) -->
-      <ng-container matColumnDef="quota">
-        <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-700">Quota</th>
-        <td mat-cell *matCellDef="let result" class="text-sm">
-          <span *ngIf="isTrainResult(result)" class="px-2 py-1 bg-gray-100 text-gray-800 rounded text-xs">
-            {{ result.quotaName }}
-          </span>
-        </td>
-      </ng-container>
+    <!-- Flight Card -->
+    <div *ngIf="isFlightResult(result)" class="p-3 sm:p-4">
+      <!-- Header -->
+      <div class="flex justify-between items-start mb-3">
+        <div>
+          <h3 class="text-lg font-semibold text-blue-600">{{ result.flightNumber }}</h3>
+          <p class="text-gray-700 font-medium">{{ result.airline }}</p>
+        </div>
+        <div class="text-right">
+          <div class="text-2xl font-bold text-green-600">₹{{ result.fare | number:'1.0-0' }}</div>
+          <div class="text-xs text-gray-500">per person</div>
+        </div>
+      </div>
 
-      <!-- Availability Column -->
-      <ng-container matColumnDef="availability">
-        <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-700">Availability</th>
-        <td mat-cell *matCellDef="let result" class="text-sm">
-          <div class="flex flex-col space-y-1">
-            <span class="px-2 py-1 rounded-full text-xs font-medium" 
-                  [ngClass]="getAvailabilityClass(result.availabilityStatus)">
+      <!-- Route & Timing -->
+      <div class="flex items-center justify-between mb-3 bg-gray-50 rounded-lg p-3">
+        <div class="text-center">
+          <div class="text-lg font-bold text-gray-900">{{ formatTime(result.departureTime) }}</div>
+          <div class="text-sm text-gray-600">{{ result.sourceAirportCode }}</div>
+          <div class="text-xs text-gray-500">{{ result.sourceCity }}</div>
+        </div>
+        
+        <div class="flex-1 mx-4">
+          <div class="flex items-center justify-center">
+            <div class="flex-1 border-t-2 border-dashed border-gray-300"></div>
+            <div class="mx-2 text-xs text-gray-500 bg-white px-2 py-1 rounded">
+              {{ formatDuration(result.flightTimeMinutes) }}
+            </div>
+            <div class="flex-1 border-t-2 border-dashed border-gray-300"></div>
+          </div>
+        </div>
+        
+        <div class="text-center">
+          <div class="text-lg font-bold text-gray-900">{{ formatTime(result.arrivalTime) }}</div>
+          <div class="text-sm text-gray-600">{{ result.destinationAirportCode }}</div>
+          <div class="text-xs text-gray-500">{{ result.destinationCity }}</div>
+        </div>
+      </div>
+
+      <!-- Class & Availability -->
+      <div class="flex items-center justify-between mb-4">
+        <span class="px-3 py-1 bg-purple-100 text-purple-800 rounded-full text-sm font-medium">
+          {{ result.flightClass }}
+        </span>
+        
+        <div class="text-right">
+          <div class="flex items-center space-x-2">
+            <span class="px-2 py-1 rounded-full text-xs font-medium" [ngClass]="getAvailabilityClass(result.availabilityStatus)">
               {{ result.availabilityStatus }}
             </span>
-            <div class="text-xs text-gray-600">
-              {{ result.availableSeats }}/{{ result.totalSeats }} seats
-            </div>
-            <div *ngIf="isTrainResult(result) && result.availabilityStatus === 'Waitlist'" 
-                 class="text-xs text-red-600">
-              WL: {{ result.availableOrWaitlistPosition }}
-            </div>
+            <span class="text-sm text-gray-600">{{ result.availableSeats }}/{{ result.totalSeats }}</span>
           </div>
-        </td>
-      </ng-container>
+        </div>
+      </div>
 
-      <!-- Fare Column -->
-      <ng-container matColumnDef="fare">
-        <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-700">Fare</th>
-        <td mat-cell *matCellDef="let result" class="text-sm">
-          <div class="font-semibold text-green-600">
-            ₹{{ result.fare | number:'1.2-2' }}
-          </div>
-          <div class="text-xs text-gray-500">per person</div>
-        </td>
-      </ng-container>
-
-      <!-- Actions Column -->
-      <ng-container matColumnDef="actions">
-        <th mat-header-cell *matHeaderCellDef class="font-semibold text-gray-700">Action</th>
-        <td mat-cell *matCellDef="let result" class="text-sm">
-          <button 
-            mat-raised-button 
-            color="primary" 
-            (click)="onBook(result)"
-            [disabled]="result.availabilityStatus === 'Sold Out'"
-            class="text-sm">
-            {{ result.availabilityStatus === 'Sold Out' ? 'Sold Out' : 'Book Now' }}
-          </button>
-        </td>
-      </ng-container>
-
-      <!-- Header and Row Definitions -->
-      <tr mat-header-row *matHeaderRowDef="displayedColumns" class="bg-gray-50"></tr>
-      <tr mat-row *matRowDef="let row; columns: displayedColumns;" 
-          class="hover:bg-gray-50 border-b border-gray-100"></tr>
-    </table>
+      <!-- Book Button -->
+      <div class="flex justify-end" *ngIf="!isAdmin()">
+        <button 
+          mat-raised-button 
+          color="primary" 
+          (click)="onBook(result)"
+          [disabled]="result.availabilityStatus === 'Sold Out'"
+          class="px-8 py-2">
+          {{ result.availabilityStatus === 'Sold Out' ? 'Sold Out' : 'Book Now' }}
+        </button>
+      </div>
+    </div>
   </div>
+</div>
 
-  <!-- No Results Message -->
-  <div *ngIf="results.length === 0" class="p-8 text-center text-gray-500">
-    <div class="text-lg mb-2">No results found</div>
-    <div class="text-sm">Please try different search criteria</div>
+<!-- No Results Message -->
+<div *ngIf="results.length === 0" class="text-center py-8 sm:py-12 px-4">
+  <div class="text-gray-400 mb-4">
+    <mat-icon style="font-size: 3rem; height: 3rem; width: 3rem;">search_off</mat-icon>
   </div>
+  <div class="text-lg sm:text-xl text-gray-600 mb-2">No {{ searchMode }}s found</div>
+  <div class="text-sm sm:text-base text-gray-500">Try adjusting your search criteria</div>
 </div>

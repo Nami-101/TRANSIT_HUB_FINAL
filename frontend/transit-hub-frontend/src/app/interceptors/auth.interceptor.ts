@@ -76,23 +76,30 @@ function handle401Error(
             refreshTokenSubject.next(response.data.token);
             return next(addTokenToRequest(request, response.data.token));
           } else {
-            // Refresh failed, redirect to login
-            authService.logout().subscribe();
-            router.navigate(['/auth/login']);
+            // Only logout if we're not on auth pages
+            if (!router.url.includes('/auth/')) {
+              authService.logout().subscribe();
+              router.navigate(['/auth/login']);
+            }
             return throwError(() => new Error('Token refresh failed'));
           }
         }),
         catchError((err) => {
           isRefreshing = false;
-          authService.logout().subscribe();
-          router.navigate(['/auth/login']);
+          // Only logout if we're not on auth pages
+          if (!router.url.includes('/auth/')) {
+            authService.logout().subscribe();
+            router.navigate(['/auth/login']);
+          }
           return throwError(() => err);
         })
       );
     } else {
-      // No refresh token, redirect to login
-      authService.logout().subscribe();
-      router.navigate(['/auth/login']);
+      // No refresh token, only logout if not on auth pages
+      if (!router.url.includes('/auth/')) {
+        authService.logout().subscribe();
+        router.navigate(['/auth/login']);
+      }
       return throwError(() => new Error('No refresh token available'));
     }
   } else {

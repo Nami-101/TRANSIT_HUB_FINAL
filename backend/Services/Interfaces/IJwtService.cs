@@ -8,6 +8,8 @@ namespace TransitHub.Services.Interfaces
         Task<string> GenerateTokenAsync(IdentityUser user, IList<string> roles);
         string GenerateRefreshToken();
         ClaimsPrincipal? GetPrincipalFromExpiredToken(string token);
-        Task<bool> ValidateTokenAsync(string token);
+        bool ValidateToken(string token);
+        string? GetUserIdFromToken(string token);
+        IEnumerable<string> GetRolesFromToken(string token);
     }
 }

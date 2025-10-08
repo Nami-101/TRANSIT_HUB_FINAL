@@ -11,6 +11,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatNativeDateModule } from '@angular/material/core';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatIconModule } from '@angular/material/icon';
 
 import { TrainService } from '../../../services/train.service';
 import { FlightService } from '../../../services/flight.service';
@@ -21,6 +22,7 @@ import { AirportDto } from '../../../models/airport.dto';
 import { LookupDataDto, TrainClassDto, TrainQuotaTypeDto, FlightClassDto } from '../../../models/lookup-data.dto';
 import { TrainSearchDto, TrainSearchResultDto } from '../../../models/train-search.dto';
 import { FlightSearchDto, FlightSearchResultDto } from '../../../models/flight-search.dto';
+import { AnimatedToggleComponent } from '../../../components/animated-toggle.component';
 
 // Common interface for location items
 interface LocationItem {
@@ -45,7 +47,9 @@ interface LocationItem {
     MatInputModule,
     MatSelectModule,
     MatNativeDateModule,
-    MatProgressSpinnerModule
+    MatProgressSpinnerModule,
+    MatIconModule,
+    AnimatedToggleComponent
   ],
   templateUrl: './search-form.component.html',
   styleUrls: ['./search-form.component.css']
@@ -85,9 +89,7 @@ export class SearchFormComponent implements OnInit {
       sourceID: ['', Validators.required],
       destinationID: ['', Validators.required],
       travelDate: ['', Validators.required],
-      passengerCount: [1, [Validators.required, Validators.min(1), Validators.max(6)]],
       trainClassID: [''],
-      quotaTypeID: [''],
       flightClassID: ['']
     });
   }
@@ -96,12 +98,12 @@ export class SearchFormComponent implements OnInit {
     this.isLoading = true;
     console.log('Starting to load data from backend...');
     
-    // Use a simpler approach to avoid potential infinite loops
-    this.lookupService.fetchStations().subscribe({
+    // Load stations from train service
+    this.trainService.getStations().subscribe({
       next: (stations) => {
         console.log('Stations loaded:', stations?.length || 0, 'items');
         this.stations = stations || [];
-        this.loadAirports();
+        this.loadTrainData();
       },
       error: (error) => {
         console.error('Error loading stations:', error);
@@ -110,51 +112,42 @@ export class SearchFormComponent implements OnInit {
     });
   }
 
-  private loadAirports() {
-    this.lookupService.fetchAirports().subscribe({
-      next: (airports) => {
-        console.log('Airports loaded:', airports?.length || 0, 'items');
-        this.airports = airports || [];
-        this.loadLookupData();
-      },
-      error: (error) => {
-        console.error('Error loading airports:', error);
+  private loadTrainData() {
+    // Load train classes and quotas
+    forkJoin({
+      classes: this.trainService.getTrainClasses(),
+      quotas: this.trainService.getQuotaTypes(),
+      airports: this.lookupService.fetchAirports()
+    }).subscribe({
+      next: (data) => {
+        console.log('Raw train classes data:', data.classes);
+        console.log('Raw quotas data:', data.quotas);
+        this.trainClasses = data.classes || [];
+        this.trainQuotaTypes = data.quotas || [];
+        this.airports = data.airports || [];
         this.isLoading = false;
-      }
-    });
-  }
-
-  private loadLookupData() {
-    this.lookupService.fetchLookupData().subscribe({
-      next: (lookupData) => {
-        console.log('Lookup data loaded:', lookupData);
-        this.trainClasses = lookupData?.trainClasses || [];
-        this.trainQuotaTypes = lookupData?.trainQuotaTypes || [];
-        this.flightClasses = lookupData?.flightClasses || [];
-        this.isLoading = false;
+        console.log('Train classes loaded:', this.trainClasses.length);
+        console.log('Quotas loaded:', this.trainQuotaTypes.length);
         console.log('All data loaded successfully');
-        
-        // Log available options for debugging
-        console.log('Available stations:', this.stations.map(s => `${s.stationName} (${s.stationCode})`));
-        console.log('Available train classes:', this.trainClasses.map(c => `${c.className} - ${c.description}`));
-        console.log('Available quotas:', this.trainQuotaTypes.map(q => `${q.quotaName} - ${q.description}`));
       },
       error: (error) => {
-        console.error('Error loading lookup data:', error);
+        console.error('Error loading train data:', error);
         this.isLoading = false;
       }
     });
   }
 
-  onSearchModeToggle(mode: 'train' | 'flight') {
-    if (this.searchMode !== mode) {
-      this.searchMode = mode;
-      this.searchModeChange.emit(mode);
+
+
+  onSearchModeToggle(mode: 'train' | 'flight' | any) {
+    const newMode = typeof mode === 'string' ? mode : mode.value;
+    if (this.searchMode !== newMode) {
+      this.searchMode = newMode;
+      this.searchModeChange.emit(newMode);
       this.searchForm.patchValue({
         sourceID: '',
         destinationID: '',
         trainClassID: '',
-        quotaTypeID: '',
         flightClassID: ''
       });
     }
@@ -185,17 +178,20 @@ export class SearchFormComponent implements OnInit {
   }
 
   private searchTrains(formValue: any, travelDate: string) {
+    // Get station names from IDs
+    const sourceStation = this.stations.find(s => s.stationID === formValue.sourceID);
+    const destStation = this.stations.find(s => s.stationID === formValue.destinationID);
+    
     const searchDto: TrainSearchDto = {
-      sourceStationID: formValue.sourceID,
-      destinationStationID: formValue.destinationID,
-      travelDate: travelDate,
-      passengerCount: formValue.passengerCount,
-      trainClassID: formValue.trainClassID || undefined,
-      quotaTypeID: formValue.quotaTypeID || undefined
+      sourceStation: sourceStation?.stationName || '',
+      destinationStation: destStation?.stationName || '',
+      travelDate: new Date(travelDate),
+      passengerCount: 1,
+      trainClass: formValue.trainClassID || undefined,
+      quota: undefined
     };
 
     console.log('Sending train search request:', searchDto);
-    console.log('Request URL:', 'http://localhost:5000/api/search/trains');
 
     this.trainService.searchTrains(searchDto).subscribe({
       next: (results) => {
@@ -204,13 +200,6 @@ export class SearchFormComponent implements OnInit {
       },
       error: (error) => {
         console.error('Error searching trains:', error);
-        console.error('Error details:', {
-          status: error.status,
-          statusText: error.statusText,
-          message: error.message,
-          url: error.url,
-          errorBody: error.error
-        });
         this.searchResults.emit([]);
       }
     });
@@ -221,7 +210,7 @@ export class SearchFormComponent implements OnInit {
       sourceAirportID: formValue.sourceID,
       destinationAirportID: formValue.destinationID,
       travelDate: travelDate,
-      passengerCount: formValue.passengerCount,
+      passengerCount: 1,
       flightClassID: formValue.flightClassID || undefined
     };
 
@@ -293,5 +282,15 @@ export class SearchFormComponent implements OnInit {
 
   getItemId(item: LocationItem): number {
     return item.id;
+  }
+
+  reverseStations(): void {
+    const sourceValue = this.searchForm.get('sourceID')?.value;
+    const destinationValue = this.searchForm.get('destinationID')?.value;
+    
+    this.searchForm.patchValue({
+      sourceID: destinationValue,
+      destinationID: sourceValue
+    });
   }
 }

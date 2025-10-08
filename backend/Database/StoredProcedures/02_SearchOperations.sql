@@ -13,7 +13,7 @@ CREATE OR ALTER PROCEDURE sp_SearchTrains
     @SourceStationCode NVARCHAR(10) = NULL,
     @DestinationStationCode NVARCHAR(10) = NULL,
     @TravelDate DATE,
-    @QuotaTypeID INT = NULL,
+    @QuotaTypeID NVARCHAR(50) = NULL,
     @TrainClassID INT = NULL,
     @PassengerCount INT = 1
 AS
@@ -54,9 +54,9 @@ BEGIN
             THROW 50013, 'Source and destination stations cannot be the same', 1;
         END
         
-        -- Search trains with availability
-        SELECT 
-            ts.ScheduleID,
+        -- Search trains with availability from TrainCoaches (new quota system)
+        SELECT DISTINCT
+            MIN(tc.CoachId) as ScheduleID, -- Use first coach ID as schedule ID
             t.TrainID,
             t.TrainName,
             t.TrainNumber,
@@ -64,43 +64,38 @@ BEGIN
             ss.StationCode as SourceStationCode,
             ds.StationName as DestinationStation,
             ds.StationCode as DestinationStationCode,
-            ts.TravelDate,
-            ts.DepartureTime,
-            ts.ArrivalTime,
-            DATEDIFF(MINUTE, ts.DepartureTime, ts.ArrivalTime) as JourneyTimeMinutes,
-            qt.QuotaName,
-            tc.ClassName as TrainClass,
-            ts.TotalSeats,
-            ts.AvailableSeats,
-            ts.Fare,
+            tc.TravelDate,
+            t.DepartureTime,
+            t.ArrivalTime,
+            DATEDIFF(MINUTE, t.DepartureTime, t.ArrivalTime) as JourneyTimeMinutes,
+            'General' as QuotaName, -- Default quota for display
+            tc.Class as TrainClass,
+            SUM(tc.TotalSeats) as TotalSeats,
+            SUM(tc.AvailableSeats) as AvailableSeats,
+            t.BasePrice as Fare,
             CASE 
-                WHEN ts.AvailableSeats >= @PassengerCount THEN 'Available'
-                WHEN ts.AvailableSeats > 0 THEN 'Limited'
+                WHEN SUM(tc.AvailableSeats) >= @PassengerCount THEN 'Available'
+                WHEN SUM(tc.AvailableSeats) > 0 THEN 'Limited'
                 ELSE 'Waitlist'
             END as AvailabilityStatus,
-            CASE 
-                WHEN ts.AvailableSeats >= @PassengerCount THEN ts.AvailableSeats
-                ELSE (
-                    SELECT COUNT(*) + 1 
-                    FROM WaitlistQueue wq 
-                    WHERE wq.TrainScheduleID = ts.ScheduleID AND wq.IsActive = 1
-                )
-            END as AvailableOrWaitlistPosition
-        FROM TrainSchedules ts
-        INNER JOIN Trains t ON ts.TrainID = t.TrainID
+            SUM(tc.AvailableSeats) as AvailableOrWaitlistPosition
+        FROM TrainCoaches tc
+        INNER JOIN Trains t ON tc.TrainId = t.TrainID
         INNER JOIN Stations ss ON t.SourceStationID = ss.StationID
         INNER JOIN Stations ds ON t.DestinationStationID = ds.StationID
-        INNER JOIN TrainQuotaTypes qt ON ts.QuotaTypeID = qt.QuotaTypeID
-        INNER JOIN TrainClasses tc ON ts.TrainClassID = tc.TrainClassID
         WHERE 
             t.SourceStationID = @SourceStationID
             AND t.DestinationStationID = @DestinationStationID
-            AND ts.TravelDate = @TravelDate
-            AND (@QuotaTypeID IS NULL OR ts.QuotaTypeID = @QuotaTypeID)
-            AND (@TrainClassID IS NULL OR ts.TrainClassID = @TrainClassID)
+            AND tc.TravelDate = @TravelDate
+            AND (@TrainClassID IS NULL OR tc.Class = (SELECT ClassName FROM TrainClasses WHERE TrainClassID = @TrainClassID))
             AND t.IsActive = 1
-            AND ts.IsActive = 1
-        ORDER BY ts.DepartureTime;
+        GROUP BY 
+            t.TrainID, t.TrainName, t.TrainNumber, 
+            ss.StationName, ss.StationCode, 
+            ds.StationName, ds.StationCode,
+            tc.TravelDate, t.DepartureTime, t.ArrivalTime, 
+            tc.Class, t.BasePrice
+        ORDER BY t.DepartureTime;
         
     END TRY
     BEGIN CATCH

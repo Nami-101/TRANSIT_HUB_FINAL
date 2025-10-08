@@ -213,6 +213,38 @@ END;
 GO
 
 -- =============================================
+-- Get Next Waitlist Position
+-- =============================================
+CREATE OR ALTER PROCEDURE sp_GetNextWaitlistPosition
+    @TrainScheduleID INT
+AS
+BEGIN
+    SET NOCOUNT ON;
+    
+    BEGIN TRY
+        DECLARE @NextPosition INT;
+        
+        -- Get the total count of active waitlist entries
+        SELECT @NextPosition = COUNT(*)
+        FROM WaitlistQueue 
+        WHERE TrainScheduleID = @TrainScheduleID 
+        AND IsActive = 1;
+        
+        SELECT @NextPosition as NextPosition;
+        
+    END TRY
+    BEGIN CATCH
+        -- Log error
+        INSERT INTO SystemLogs (LogLevel, Message, StackTrace)
+        VALUES ('Error', ERROR_MESSAGE(), ERROR_PROCEDURE() + ' - Line: ' + CAST(ERROR_LINE() AS NVARCHAR(10)));
+        
+        -- Return 0 if error
+        SELECT 0 as NextPosition;
+    END CATCH
+END;
+GO
+
+-- =============================================
 -- Get Waitlist Status
 -- =============================================
 CREATE OR ALTER PROCEDURE sp_GetWaitlistStatus

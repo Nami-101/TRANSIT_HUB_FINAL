@@ -31,5 +31,6 @@ namespace TransitHub.Models
         public virtual Station DestinationStation { get; set; } = null!;
 
         public virtual ICollection<TrainSchedule> TrainSchedules { get; set; } = new List<TrainSchedule>();
+        public virtual ICollection<Coach> Coaches { get; set; } = new List<Coach>();
     }
 }

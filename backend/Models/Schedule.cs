@@ -94,6 +94,5 @@ namespace TransitHub.Models
         public virtual FlightClass FlightClass { get; set; } = null!;
 
         public virtual ICollection<Booking> Bookings { get; set; } = new List<Booking>();
-        public virtual ICollection<WaitlistQueue> WaitlistQueues { get; set; } = new List<WaitlistQueue>();
     }
 }

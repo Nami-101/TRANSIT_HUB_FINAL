@@ -1,6 +1,6 @@
 using Microsoft.Data.SqlClient;
+using Microsoft.EntityFrameworkCore;
 using System.Data;
-using Microsoft.Data.SqlClient;
 using TransitHub.Models.DTOs;
 using TransitHub.Repositories.Interfaces;
 using TransitHub.Services.Interfaces;
@@ -22,25 +22,81 @@ namespace TransitHub.Services
         {
             try
             {
-                // Prepare parameters for stored procedure
+                // Use stored procedure but group results to avoid quota duplicates
                 var parameters = new object[]
                 {
-                    new SqlParameter("@SourceStationID", (object?)searchDto.SourceStationID ?? DBNull.Value),
-                    new SqlParameter("@DestinationStationID", (object?)searchDto.DestinationStationID ?? DBNull.Value),
-                    new SqlParameter("@SourceStationCode", (object?)searchDto.SourceStationCode ?? DBNull.Value),
-                    new SqlParameter("@DestinationStationCode", (object?)searchDto.DestinationStationCode ?? DBNull.Value),
-                    new SqlParameter("@TravelDate", searchDto.TravelDate.ToDateTime(TimeOnly.MinValue)) { SqlDbType = SqlDbType.Date },
-                    new SqlParameter("@QuotaTypeID", (object?)searchDto.QuotaTypeID ?? DBNull.Value),
-                    new SqlParameter("@TrainClassID", (object?)searchDto.TrainClassID ?? DBNull.Value),
+                    new SqlParameter("@SourceStation", searchDto.SourceStation),
+                    new SqlParameter("@DestinationStation", searchDto.DestinationStation),
+                    new SqlParameter("@TravelDate", searchDto.TravelDate.Date) { SqlDbType = SqlDbType.Date },
+                    new SqlParameter("@TrainClass", (object?)searchDto.TrainClass ?? DBNull.Value),
+                    new SqlParameter("@Quota", (object?)searchDto.Quota ?? DBNull.Value),
                     new SqlParameter("@PassengerCount", searchDto.PassengerCount)
                 };
 
-                // Execute stored procedure
-                var result = await _unitOfWork.ExecuteStoredProcedureAsync<TrainSearchResultDto>(
+                var rawResults = await _unitOfWork.ExecuteStoredProcedureAsync<TrainSearchRawResultDto>(
                     "sp_SearchTrains", parameters);
 
-                _logger.LogInformation("Train search completed. Found {Count} results", result.Count());
-                return result;
+                // Group by train and class to eliminate quota duplicates
+                var groupedResults = rawResults
+                    .GroupBy(r => new { r.TrainID, r.TrainClass })
+                    .Select(g => new
+                    {
+                        TrainID = g.First().TrainID,
+                        TrainNumber = g.First().TrainNumber,
+                        TrainName = g.First().TrainName,
+                        SourceStation = g.First().SourceStation,
+                        SourceStationCode = g.First().SourceStationCode,
+                        DestinationStation = g.First().DestinationStation,
+                        DestinationStationCode = g.First().DestinationStationCode,
+                        TravelDate = g.First().TravelDate,
+                        DepartureTime = g.First().DepartureTime,
+                        ArrivalTime = g.First().ArrivalTime,
+                        JourneyTimeMinutes = g.First().JourneyTimeMinutes,
+                        TrainClass = g.First().TrainClass,
+                        ScheduleID = g.First().ScheduleID,
+                        TotalSeats = g.Sum(x => x.TotalSeats),
+                        AvailableSeats = g.Sum(x => x.AvailableSeats),
+                        Fare = g.First().Fare
+                    })
+                    .ToList();
+
+                var results = new List<TrainSearchResultDto>();
+                
+                foreach (var group in groupedResults)
+                {
+                    var availabilityStatus = group.AvailableSeats >= searchDto.PassengerCount ? "Available" : 
+                                            group.AvailableSeats > 0 ? "Limited" : "Waitlist";
+                    
+                    var availableOrWaitlistPosition = availabilityStatus == "Waitlist" ? 
+                        await GetWaitlistCountAsync(group.ScheduleID, group.TrainClass) : group.AvailableSeats;
+                    
+                    results.Add(new TrainSearchResultDto
+                    {
+                        TrainID = group.TrainID,
+                        TrainNumber = group.TrainNumber,
+                        TrainName = group.TrainName,
+                        SourceStation = group.SourceStation,
+                        SourceStationCode = group.SourceStationCode,
+                        DestinationStation = group.DestinationStation,
+                        DestinationStationCode = group.DestinationStationCode,
+                        TravelDate = group.TravelDate,
+                        DepartureTime = group.DepartureTime,
+                        ArrivalTime = group.ArrivalTime,
+                        JourneyTimeMinutes = group.JourneyTimeMinutes,
+                        TrainClass = group.TrainClass,
+                        ScheduleID = group.ScheduleID,
+                        TotalSeats = group.TotalSeats,
+                        AvailableSeats = group.AvailableSeats,
+                        Fare = group.Fare,
+                        AvailabilityStatus = availabilityStatus,
+                        AvailableOrWaitlistPosition = availableOrWaitlistPosition
+                    });
+                }
+                
+                results = results.OrderBy(r => r.DepartureTime).ThenBy(r => r.TrainClass).ToList();
+
+                _logger.LogInformation("Train search completed. Found {Count} class results", results.Count);
+                return results;
             }
             catch (SqlException ex) when (ex.Number >= 50010 && ex.Number <= 50015)
             {
@@ -65,7 +121,7 @@ namespace TransitHub.Services
                     new SqlParameter("@DestinationAirportID", (object?)searchDto.DestinationAirportID ?? DBNull.Value),
                     new SqlParameter("@SourceAirportCode", (object?)searchDto.SourceAirportCode ?? DBNull.Value),
                     new SqlParameter("@DestinationAirportCode", (object?)searchDto.DestinationAirportCode ?? DBNull.Value),
-                    new SqlParameter("@TravelDate", searchDto.TravelDate.ToDateTime(TimeOnly.MinValue)) { SqlDbType = SqlDbType.Date },
+                    new SqlParameter("@TravelDate", searchDto.TravelDate?.Date ?? DateTime.Today) { SqlDbType = SqlDbType.Date },
                     new SqlParameter("@FlightClassID", (object?)searchDto.FlightClassID ?? DBNull.Value),
                     new SqlParameter("@PassengerCount", searchDto.PassengerCount)
                 };
@@ -120,6 +176,30 @@ namespace TransitHub.Services
             {
                 _logger.LogError(ex, "Error retrieving airports");
                 throw;
+            }
+        }
+
+        private async Task<int> GetWaitlistCountAsync(int scheduleId, string trainClass)
+        {
+            try
+            {
+                var parameters = new object[]
+                {
+                    new SqlParameter("@TrainScheduleID", scheduleId),
+                    new SqlParameter("@TrainClass", trainClass)
+                };
+
+                var result = await _unitOfWork.ExecuteStoredProcedureAsync<WaitlistPositionDto>(
+                    "sp_GetNextWaitlistPosition", parameters);
+                
+                var count = result.FirstOrDefault()?.NextPosition ?? 0;
+                _logger.LogInformation("Waitlist count for schedule {ScheduleId} class {TrainClass}: {Count}", scheduleId, trainClass, count);
+                return count;
+            }
+            catch (Exception ex)
+            {
+                _logger.LogWarning(ex, "Error getting waitlist count for schedule {ScheduleId} class {TrainClass}, defaulting to 0", scheduleId, trainClass);
+                return 0; // Default to 0 if no waitlist exists
             }
         }
 

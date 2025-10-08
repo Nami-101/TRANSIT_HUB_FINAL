@@ -12,6 +12,18 @@ export class TrainService {
   constructor(private http: HttpClient) { }
 
   searchTrains(dto: TrainSearchDto): Observable<TrainSearchResultDto[]> {
-    return this.http.post<TrainSearchResultDto[]>(`${this.baseUrl}/search/trains`, dto);
+    return this.http.post<TrainSearchResultDto[]>(`${this.baseUrl}/train/search`, dto);
+  }
+
+  getStations(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/train/stations`);
+  }
+
+  getTrainClasses(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/train/classes`);
+  }
+
+  getQuotaTypes(): Observable<any[]> {
+    return this.http.get<any[]>(`${this.baseUrl}/train/quotas`);
   }
 }

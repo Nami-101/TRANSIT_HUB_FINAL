@@ -1,140 +1,113 @@
-<div class="bg-white rounded-lg shadow-lg p-6 mb-6">
-  <form [formGroup]="searchForm" (ngSubmit)="onSubmit()" class="space-y-6">
+<div class="bg-white rounded-lg shadow-lg p-4 sm:p-6 mb-6">
+  <form [formGroup]="searchForm" (ngSubmit)="onSubmit()" class="space-y-4 sm:space-y-6">
     
     <!-- Search Mode Toggle -->
-    <div class="flex justify-center mb-6">
-      <mat-button-toggle-group 
-        value="train" 
-        (change)="onSearchModeToggle($event.value)"
-        class="bg-blue-50">
-        <mat-button-toggle value="train" class="px-8 py-2">
-          <span class="flex items-center">
-            🚂 Train Search
-          </span>
-        </mat-button-toggle>
-        <mat-button-toggle value="flight" class="px-8 py-2">
-          <span class="flex items-center">
-            ✈️ Flight Search
-          </span>
-        </mat-button-toggle>
-      </mat-button-toggle-group>
+    <div class="flex justify-center mb-4 sm:mb-6">
+      <app-animated-toggle 
+        [value]="searchMode" 
+        (valueChange)="onSearchModeToggle($event)">
+      </app-animated-toggle>
     </div>
 
-    <!-- Form Fields Grid -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+    <!-- Form Fields -->
+    <div class="space-y-4 sm:space-y-6">
       
-      <!-- Source -->
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>
-          {{ searchMode === 'train' ? 'From Station' : 'From Airport' }}
-        </mat-label>
-        <mat-select formControlName="sourceID" required>
-          <mat-option 
-            *ngFor="let item of sourceList" 
-            [value]="getItemId(item)">
-            {{ getDisplayName(item) }}
-          </mat-option>
-        </mat-select>
-        <mat-error *ngIf="searchForm.get('sourceID')?.hasError('required') && searchForm.get('sourceID')?.touched">
-          Source is required
-        </mat-error>
-      </mat-form-field>
-
-      <!-- Destination -->
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>
-          {{ searchMode === 'train' ? 'To Station' : 'To Airport' }}
-        </mat-label>
-        <mat-select formControlName="destinationID" required>
-          <mat-option 
-            *ngFor="let item of destinationList" 
-            [value]="getItemId(item)">
-            {{ getDisplayName(item) }}
-          </mat-option>
-        </mat-select>
-        <mat-error *ngIf="searchForm.get('destinationID')?.hasError('required') && searchForm.get('destinationID')?.touched">
-          Destination is required
-        </mat-error>
-      </mat-form-field>
-
-      <!-- Travel Date -->
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Travel Date</mat-label>
-        <input 
-          matInput 
-          [matDatepicker]="picker" 
-          formControlName="travelDate"
-          [min]="minDate"
-          required>
-        <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
-        <mat-datepicker #picker></mat-datepicker>
-        <mat-error *ngIf="searchForm.get('travelDate')?.hasError('required') && searchForm.get('travelDate')?.touched">
-          Travel date is required
-        </mat-error>
-      </mat-form-field>
-
-      <!-- Passenger Count -->
-      <mat-form-field appearance="outline" class="w-full">
-        <mat-label>Passengers</mat-label>
-        <mat-select formControlName="passengerCount" required>
-          <mat-option value="1">1 Passenger</mat-option>
-          <mat-option value="2">2 Passengers</mat-option>
-          <mat-option value="3">3 Passengers</mat-option>
-          <mat-option value="4">4 Passengers</mat-option>
-          <mat-option value="5">5 Passengers</mat-option>
-          <mat-option value="6">6 Passengers</mat-option>
-        </mat-select>
-        <mat-error *ngIf="searchForm.get('passengerCount')?.invalid && searchForm.get('passengerCount')?.touched">
-          Please select passenger count (1-6)
-        </mat-error>
-      </mat-form-field>
-
-      <!-- Train-specific fields -->
-      <div *ngIf="searchMode === 'train'" class="contents">
-        <!-- Train Class -->
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Class (Optional)</mat-label>
-          <mat-select formControlName="trainClassID">
-            <mat-option value="">Any Class</mat-option>
+      <!-- Source and Destination Row -->
+      <div class="flex flex-col sm:flex-row items-center gap-4">
+        <!-- Source -->
+        <mat-form-field appearance="outline" class="w-full flex-1">
+          <mat-label>
+            {{ searchMode === 'train' ? 'Source Station' : 'Source Airport' }}
+          </mat-label>
+          <mat-select formControlName="sourceID" required>
             <mat-option 
-              *ngFor="let trainClass of trainClasses" 
-              [value]="trainClass.trainClassID">
-              {{ trainClass.className }}
-              <span *ngIf="trainClass.description" class="text-gray-500"> - {{ trainClass.description }}</span>
+              *ngFor="let item of sourceList" 
+              [value]="getItemId(item)">
+              {{ getDisplayName(item) }}
             </mat-option>
           </mat-select>
+          <mat-error *ngIf="searchForm.get('sourceID')?.hasError('required') && searchForm.get('sourceID')?.touched">
+            Source is required
+          </mat-error>
         </mat-form-field>
 
-        <!-- Quota Type -->
-        <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Quota (Optional)</mat-label>
-          <mat-select formControlName="quotaTypeID">
-            <mat-option value="">Any Quota</mat-option>
+        <!-- Reverse Button -->
+        <button 
+          type="button"
+          mat-icon-button 
+          color="primary"
+          (click)="reverseStations()"
+          class="flex-shrink-0 mt-2 sm:mt-0"
+          title="Swap source and destination">
+          <mat-icon>swap_horiz</mat-icon>
+        </button>
+
+        <!-- Destination -->
+        <mat-form-field appearance="outline" class="w-full flex-1">
+          <mat-label>
+            {{ searchMode === 'train' ? 'Destination Station' : 'Destination Airport' }}
+          </mat-label>
+          <mat-select formControlName="destinationID" required>
             <mat-option 
-              *ngFor="let quota of trainQuotaTypes" 
-              [value]="quota.quotaTypeID">
-              {{ quota.quotaName }}
-              <span *ngIf="quota.description" class="text-gray-500"> - {{ quota.description }}</span>
+              *ngFor="let item of destinationList" 
+              [value]="getItemId(item)">
+              {{ getDisplayName(item) }}
             </mat-option>
           </mat-select>
+          <mat-error *ngIf="searchForm.get('destinationID')?.hasError('required') && searchForm.get('destinationID')?.touched">
+            Destination is required
+          </mat-error>
         </mat-form-field>
       </div>
 
-      <!-- Flight-specific fields -->
-      <div *ngIf="searchMode === 'flight'" class="contents">
-        <!-- Flight Class -->
+      <!-- Date and Class Row -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-6">
+        <!-- Travel Date -->
         <mat-form-field appearance="outline" class="w-full">
-          <mat-label>Class (Optional)</mat-label>
-          <mat-select formControlName="flightClassID">
-            <mat-option value="">Any Class</mat-option>
-            <mat-option 
-              *ngFor="let flightClass of flightClasses" 
-              [value]="flightClass.flightClassID">
-              {{ flightClass.className }}
-              <span *ngIf="flightClass.description" class="text-gray-500"> - {{ flightClass.description }}</span>
-            </mat-option>
-          </mat-select>
+          <mat-label>Date of Travel</mat-label>
+          <input 
+            matInput 
+            [matDatepicker]="picker" 
+            formControlName="travelDate"
+            [min]="minDate"
+            required>
+          <mat-datepicker-toggle matSuffix [for]="picker"></mat-datepicker-toggle>
+          <mat-datepicker #picker></mat-datepicker>
+          <mat-error *ngIf="searchForm.get('travelDate')?.hasError('required') && searchForm.get('travelDate')?.touched">
+            Travel date is required
+          </mat-error>
         </mat-form-field>
+
+        <!-- Class Selection -->
+        <div class="w-full">
+          <!-- Train Class -->
+          <mat-form-field appearance="outline" class="w-full" *ngIf="searchMode === 'train'">
+            <mat-label>Class</mat-label>
+            <mat-select formControlName="trainClassID">
+              <mat-option value="">Any Class</mat-option>
+              <mat-option 
+                *ngFor="let trainClass of trainClasses" 
+                [value]="trainClass.className">
+                {{ trainClass.className }}
+                <span *ngIf="trainClass.description" class="text-gray-500"> - {{ trainClass.description }}</span>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+
+          <!-- Flight Class -->
+          <mat-form-field appearance="outline" class="w-full" *ngIf="searchMode === 'flight'">
+            <mat-label>Class</mat-label>
+            <mat-select formControlName="flightClassID">
+              <mat-option value="">Any Class</mat-option>
+              <mat-option 
+                *ngFor="let flightClass of flightClasses" 
+                [value]="flightClass.className">
+                {{ flightClass.className }}
+                <span *ngIf="flightClass.description" class="text-gray-500"> - {{ flightClass.description }}</span>
+              </mat-option>
+            </mat-select>
+          </mat-form-field>
+        </div>
       </div>
     </div>
 
@@ -145,13 +118,14 @@
         color="primary" 
         type="submit"
         [disabled]="searchForm.invalid || isLoading"
-        class="px-12 py-3 text-lg">
+        class="w-full sm:w-auto px-8 sm:px-12 py-3 text-base sm:text-lg">
         <mat-spinner 
           *ngIf="isLoading" 
           diameter="20" 
           class="mr-2 inline-block">
         </mat-spinner>
-        {{ isLoading ? 'Searching...' : 'Search ' + (searchMode === 'train' ? 'Trains' : 'Flights') }}
+        <span class="hidden sm:inline">{{ isLoading ? 'Searching...' : 'Search ' + (searchMode === 'train' ? 'Trains' : 'Flights') }}</span>
+        <span class="sm:hidden">{{ isLoading ? 'Searching...' : 'Search' }}</span>
       </button>
     </div>
   </form>
